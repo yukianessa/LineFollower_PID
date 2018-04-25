@@ -10,13 +10,20 @@ void motor_control(void);
 
 void setup()
 {
- pinMode(9,OUTPUT); //PWM Pin 1 << buat ngatur tenaga roda sebelah kanan
- pinMode(10,OUTPUT); //PWM Pin 2 << buat ngatur tenaga roda sebelah kiri
- pinMode(4,OUTPUT); //Left Motor Pin 1 << maju
- pinMode(5,OUTPUT); //Left Motor Pin 2 << mundur
- pinMode(6,OUTPUT); //Right Motor Pin 1 << maju
- pinMode(7,OUTPUT);  //Right Motor Pin 2 << mundur
+ pinMode(9,OUTPUT); //PWM Pin 1
+ pinMode(10,OUTPUT); //PWM Pin 2
+ pinMode(4,OUTPUT); //Left Motor Pin 1
+ pinMode(5,OUTPUT); //Left Motor Pin 2
+ pinMode(6,OUTPUT); //Right Motor Pin 1
+ pinMode(7,OUTPUT);  //Right Motor Pin 2
  Serial.begin(9600); //Enable Serial Communications
+}
+
+void loop()
+{
+    read_sensor_values();
+    calculate_pid();
+    motor_control();
 }
 
 void read_sensor_values()
@@ -48,16 +55,18 @@ void read_sensor_values()
   else if((sensor[0]==0)&&(sensor[1]==0)&&(sensor[2]==0)&&(sensor[4]==0)&&(sensor[4]==0))
     if(error==-4) error=-5;
     else error=5;
+
 }
 
 void calculate_pid()
 {
     P = error;
-    I = I + error;
-    D = error – previous_error;
+    I = I + previous_I;
+    D = error-previous_error;
     
     PID_value = (Kp*P) + (Ki*I) + (Kd*D);
     
+    previous_I=I;
     previous_error=error;
 }
 
@@ -70,9 +79,9 @@ void motor_control()
     // The motor speed should not exceed the max PWM value
     constrain(left_motor_speed,0,255);
     constrain(right_motor_speed,0,255);
-    
-    analogWrite(9,left_motor_speed);   //Left Motor Speed
-    analogWrite(10,right_motor_speed);  //Right Motor Speed
+	
+	analogWrite(9,initial_motor_speed-PID_value);   //Left Motor Speed
+    analogWrite(10,initial_motor_speed+PID_value);  //Right Motor Speed
     //following lines of code are to make the bot move forward
     /*The pin numbers and high, low values might be different
     depending on your connections */
@@ -80,11 +89,4 @@ void motor_control()
     digitalWrite(5,LOW);
     digitalWrite(6,LOW);
     digitalWrite(7,HIGH);
-}
-
-void loop()
-{
-    read_sensor_values();
-    calculate_pid();
-    motor_control();
 }
